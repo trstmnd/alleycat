@@ -108,6 +108,7 @@ Le numero s'affiche sur l'ecran titre. Il vit dans `src/main.js`
 | Version | Ce qu'elle apporte |
 |---|---|
 | v0.1 | ville fixe, trois depots, lancer du colis, skid, fantome, medailles, records locaux |
+| v0.2 | tient sur un telephone : zoom adaptatif, zones tactiles degagees |
 
 ## Publication
 

@@ -59,6 +59,10 @@ html, body {
 .btn.icon .slash { opacity: 0; }
 .btn.icon[aria-pressed="true"] .wave { opacity: 0; }
 .btn.icon[aria-pressed="true"] .slash { opacity: 1; }
+/* Pendant la course, ce bouton tombe pile sous le pouce gauche, la ou on
+   dirige. On le retire : le son se coupe depuis le titre ou l'arrivee. */
+body.racing #sound { display: none; }
+
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 
 .row { display: flex; gap: 10px; justify-content: center; margin-top: 18px; }
@@ -128,6 +132,28 @@ kbd {
 
 #loading { position: fixed; inset: 0; display: grid; place-items: center; background: var(--bg); color: var(--dim); z-index: 10; }
 #loading.off { display: none; }
+
+/* Telephone : le HUD du bureau prend un cinquieme de la dalle et le nom du
+   depot passe a la ligne. Trois colonnes dans 390 px demandent plus petit. */
+@media (max-width: 520px) {
+  :root { --pad: 10px; }
+  .hud-cell { font-size: 9px; letter-spacing: .05em; }
+  .hud-cell b { font-size: 16px; }
+  .hud-cell.center b { font-size: 14px; line-height: 1.15; }
+  .hud-cell .street, .hud-cell .target { font-size: 9px; }
+  .card { padding: 18px 16px; }
+  .logo { line-height: 1; }
+  .keys { font-size: 13px; }
+}
+
+/* Paysage sur telephone : la dalle ne fait que 340 px de haut, le HUD en
+   prenait le quart. */
+@media (max-height: 430px) {
+  .hud-cell b { font-size: 14px; }
+  .hud-cell.center b { font-size: 12px; }
+  .hud-cell .street, .hud-cell .target { font-size: 8px; }
+  #callout { top: 10%; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   #callout { transition: none !important; }

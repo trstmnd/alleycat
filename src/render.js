@@ -4,6 +4,12 @@
 import { CELL, COLS, ROWS, MAP, WORLD_W, WORLD_H } from './city.js';
 import { PARCEL } from './parcel.js';
 
+// Unites monde visibles au minimum sur le petit cote de l'ecran.
+const VIEW_MIN = 620;
+
+// Debordement autorise de la camera hors de la ville, en fraction d'ecran.
+const EDGE_SLACK = 0.16;
+
 const C = {
   road: '#1b2130',
   roadLine: '#2a3346',
@@ -95,10 +101,11 @@ export function createRenderer(canvas) {
   // Le coursier doit rester trouvable d'un coup d'oeil sur une ville sombre et
   // dense : un halo noir dessous, une fleche vive dessus, et une taille qui ne
   // depend pas de l'echelle de la ville.
-  function rider(g, x, y, heading, color, alpha, halo) {
+  function rider(g, x, y, heading, color, alpha, halo, scale) {
     g.save();
     g.globalAlpha = alpha;
     g.translate(x, y);
+    if (scale && scale !== 1) g.scale(scale, scale);
     if (halo) {
       g.fillStyle = 'rgba(0,0,0,.5)';
       g.beginPath();
@@ -130,20 +137,36 @@ export function createRenderer(canvas) {
     draw(state) {
       const { bike, target, parcels, flying, skids, ghost, t } = state;
 
+      // Zoom : a l'echelle du bureau, un telephone en portrait ne montrerait
+      // qu'une dizaine de cases de large et la ville serait illisible. On
+      // desserre jusqu'a voir au moins VIEW_MIN unites sur le petit cote, et
+      // jamais au dela de 1 : on ne zoome pas dans la ville sur grand ecran.
+      const zoom = Math.min(1, Math.min(w, h) / VIEW_MIN);
+      const vw = w / zoom;
+      const vh = h / zoom;
+
       // Camera : centree sur le velo, avec une avance dans le sens de la
       // marche pour voir venir, et bornee pour ne jamais sortir de la ville.
-      const lead = Math.min(bike.speed, 265) * 0.45;
+      const lead = Math.min(bike.speed, 200) * 0.45;
+      // Sur petit ecran, les pouces occupent le bas de la dalle. On remonte le
+      // coursier au tiers superieur pour qu'il ne roule pas sous les doigts.
+      const thumbBias = zoom < 1 ? vh * 0.10 : 0;
       let cx = bike.x + Math.cos(bike.heading) * lead;
-      let cy = bike.y + Math.sin(bike.heading) * lead;
-      cx = Math.max(w / 2, Math.min(WORLD_W - w / 2, cx));
-      cy = Math.max(h / 2, Math.min(WORLD_H - h / 2, cy));
-      if (WORLD_W < w) cx = WORLD_W / 2;
-      if (WORLD_H < h) cy = WORLD_H / 2;
+      let cy = bike.y + Math.sin(bike.heading) * lead + thumbBias;
+      // La camera a le droit de deborder de la ville, jusqu'a EDGE_SLACK d'un
+      // ecran. Verrouiller pile sur les bords collait le coursier au bas de la
+      // dalle des le depart, qui est a deux cases du bord sud. Le hors ville
+      // se remplit de la meme couleur que l'ombre des paves, ca ne se voit pas.
+      const mx = vw * EDGE_SLACK;
+      const my = vh * EDGE_SLACK;
+      cx = Math.max(vw / 2 - mx, Math.min(WORLD_W - vw / 2 + mx, cx));
+      cy = Math.max(vh / 2 - my, Math.min(WORLD_H - vh / 2 + my, cy));
 
       ctx.fillStyle = C.wall;
       ctx.fillRect(0, 0, w, h);
       ctx.save();
-      ctx.translate(Math.round(w / 2 - cx), Math.round(h / 2 - cy));
+      ctx.scale(zoom, zoom);
+      ctx.translate(Math.round(vw / 2 - cx), Math.round(vh / 2 - cy));
 
       ctx.drawImage(city, 0, 0);
 
@@ -179,8 +202,11 @@ export function createRenderer(canvas) {
         ctx.fillRect(p.x - 5, p.y - 5, 10, 10);
       }
 
-      if (ghost) rider(ctx, ghost.x, ghost.y, ghost.heading, C.ghost, 1, false);
-      rider(ctx, bike.x, bike.y, bike.heading, C.rider, 1, true);
+      // Au dezoom le coursier grossit un peu pour rester trouvable, plafonne
+      // pour qu'il ne mente pas trop sur sa boite de collision.
+      const rs = Math.min(1.5, 1 / zoom);
+      if (ghost) rider(ctx, ghost.x, ghost.y, ghost.heading, C.ghost, 1, false, rs);
+      rider(ctx, bike.x, bike.y, bike.heading, C.rider, 1, true, rs);
 
       if (flying) {
         ctx.fillStyle = C.parcel;
@@ -196,8 +222,8 @@ export function createRenderer(canvas) {
       // Boussole : une fleche en bord d'ecran vers le depot courant. C'est la
       // concession assumee de la v0.1, la ville n'a pas encore ete apprise.
       if (target) {
-        const sx = target.x - cx + w / 2;
-        const sy = target.y - cy + h / 2;
+        const sx = (target.x - cx) * zoom + w / 2;
+        const sy = (target.y - cy) * zoom + h / 2;
         const m = 54;
         if (sx < m || sx > w - m || sy < m || sy > h - m) {
           const a = Math.atan2(sy - h / 2, sx - w / 2);

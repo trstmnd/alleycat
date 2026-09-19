@@ -58,6 +58,11 @@ Constantes de reglage : `BIKE`, `PARCEL`, `MEDALS`, `MAP` et `DROPS`,
    s'apprend pas, et la connaitre est tout le sujet.
 6. **La camera ne tourne jamais**, nord en haut. Suivre le cap serait plus
    immersif et rendrait la ville inapprenable.
+   Elle se desserre en dessous de `VIEW_MIN` unites visibles sur le petit cote
+   (un portrait de telephone ne montrerait qu'une dizaine de cases), elle a le
+   droit de deborder de la ville de `EDGE_SLACK` d'ecran (sinon le coursier
+   colle au bord au depart), et elle le remonte d'un cran sur petit ecran pour
+   qu'il ne roule pas sous les pouces. Les trois sont dans `src/render.js`.
 7. **Aucun chargement distant.** Pas de CDN, pas d'importmap, pas de police
    Google. `check.sh` echoue sinon.
 8. **Aucun tiret cadratin** dans `index.html`, `style.css`, `src/`, `tests/`,
