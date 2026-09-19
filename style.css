@@ -1,0 +1,160 @@
+/* ALLEYCAT : tout le style de la page. Aucune dependance, aucune police externe. */
+
+:root {
+  --ink: #eaf2ff;
+  --dim: #8ea4c2;
+  --bg: #0d1119;
+  --accent: #6ee7ff;
+  --good: #7dffa8;
+  --bad: #ff7d7d;
+  --warn: #ffcf5c;
+  --pad: 14px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--ink);
+  font: 500 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  touch-action: none;
+  user-select: none;
+}
+
+#scene { position: fixed; inset: 0; display: block; }
+
+.screen {
+  position: fixed; inset: 0; display: none;
+  padding: max(var(--pad), env(safe-area-inset-top)) var(--pad)
+           max(var(--pad), env(safe-area-inset-bottom));
+}
+.screen.on { display: flex; flex-direction: column; }
+.screen.overlay { background: rgba(6, 10, 18, .74); backdrop-filter: blur(6px); }
+.screen.on.overlay, .screen.on:not(.hud) { align-items: center; justify-content: center; }
+
+.logo { font-size: clamp(38px, 11vw, 66px); font-weight: 900; letter-spacing: -.045em; line-height: .95; }
+.logo span { color: var(--accent); }
+.tag { color: var(--dim); margin: 8px 0 18px; }
+.version { color: var(--dim); font-size: 12px; margin-top: 10px; opacity: .7; }
+
+.btn {
+  font: inherit; font-weight: 800; letter-spacing: .04em;
+  color: #06121e; background: var(--accent);
+  border: 0; border-radius: 999px; padding: 12px 24px; cursor: pointer;
+  transition: transform .08s ease;
+}
+.btn:active { transform: scale(.96); }
+.btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.btn.big { font-size: 17px; padding: 14px 32px; }
+.btn.ghost { color: var(--ink); background: rgba(255, 255, 255, .1); }
+.btn.icon {
+  position: fixed; left: var(--pad); bottom: max(var(--pad), env(safe-area-inset-bottom));
+  width: 40px; height: 40px; padding: 0; display: grid; place-items: center; z-index: 5;
+}
+.btn.icon svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+.btn.icon .horn { fill: currentColor; stroke: none; }
+.btn.icon .slash { opacity: 0; }
+.btn.icon[aria-pressed="true"] .wave { opacity: 0; }
+.btn.icon[aria-pressed="true"] .slash { opacity: 1; }
+/* Pendant la course, ce bouton tombe pile sous le pouce gauche, la ou on
+   dirige. On le retire : le son se coupe depuis le titre ou l'arrivee. */
+body.racing #sound { display: none; }
+
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+
+.row { display: flex; gap: 10px; justify-content: center; margin-top: 18px; }
+
+.card {
+  background: rgba(13, 20, 33, .93); border: 1px solid rgba(255, 255, 255, .1);
+  border-radius: 18px; padding: 24px; max-width: 400px; width: 100%; text-align: center;
+}
+.card h2 { font-size: 24px; font-weight: 900; letter-spacing: -.02em; }
+.card p { color: var(--dim); margin-top: 8px; }
+.note { font-size: 13px; }
+
+.keys { list-style: none; margin: 4px 0 14px; font-size: 14px; color: var(--dim); }
+.keys li { margin: 5px 0; }
+kbd {
+  display: inline-block; min-width: 24px; padding: 2px 7px; margin-right: 4px;
+  font: inherit; font-size: 12px; font-weight: 700; color: var(--ink);
+  background: rgba(255, 255, 255, .11); border-radius: 5px;
+}
+
+/* HUD */
+.hud { pointer-events: none; }
+.hud #pause { pointer-events: auto; }
+.hud-top { display: flex; gap: 10px; align-items: flex-start; }
+.hud-cell { flex: 1; font-size: 11px; letter-spacing: .08em; color: var(--dim); }
+.hud-cell b {
+  display: block; font-size: 24px; color: var(--ink); letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+}
+.hud-cell.center { text-align: center; }
+.hud-cell.right { text-align: right; }
+.hud-cell .street { display: block; font-size: 11px; opacity: .75; letter-spacing: 0; }
+.hud-cell .target { display: block; font-size: 11px; color: var(--good); letter-spacing: 0; }
+#hud-parcel.warn { color: var(--warn); }
+
+/* Haut de l'ecran et taille contenue : au centre le callout se posait pile sur
+   le coursier et masquait la zone de depot au moment ou on la regarde. */
+#callout {
+  position: absolute; left: 0; right: 0; top: 15%; text-align: center;
+  font-size: clamp(20px, 4.4vw, 34px); font-weight: 900; letter-spacing: .02em;
+  text-shadow: 0 2px 14px rgba(6, 10, 18, .95);
+  opacity: 0; transform: scale(.85); pointer-events: none;
+}
+#callout.on { opacity: 1; transform: scale(1); transition: opacity .12s, transform .22s cubic-bezier(.2, 1.5, .4, 1); }
+#callout.good { color: var(--good); }
+#callout.bad { color: var(--bad); }
+#callout.warn { color: var(--warn); }
+
+#pause { position: absolute; inset: 0; display: none; place-items: center; background: rgba(6, 10, 18, .82); }
+#pause.on { display: grid; }
+
+.final { font-size: 56px; font-weight: 900; letter-spacing: -.03em; margin: 10px 0 4px; font-variant-numeric: tabular-nums; }
+.medal {
+  display: inline-block; padding: 5px 16px; border-radius: 999px;
+  font-size: 13px; font-weight: 800; letter-spacing: .1em;
+  background: rgba(255, 255, 255, .1); color: var(--dim);
+}
+.medal.auteur { background: #6ee7ff; color: #06121e; }
+.medal.or { background: #ffcf5c; color: #2a1f00; }
+.medal.argent { background: #cfd9e6; color: #1a2030; }
+.medal.bronze { background: #d0884f; color: #24120a; }
+
+.splits { list-style: none; margin: 16px 0 6px; font-size: 13px; }
+.splits li { display: flex; justify-content: space-between; padding: 5px 2px; border-bottom: 1px solid rgba(255, 255, 255, .07); }
+.splits span { color: var(--dim); letter-spacing: .06em; }
+.splits b { font-variant-numeric: tabular-nums; }
+
+#loading { position: fixed; inset: 0; display: grid; place-items: center; background: var(--bg); color: var(--dim); z-index: 10; }
+#loading.off { display: none; }
+
+/* Telephone : le HUD du bureau prend un cinquieme de la dalle et le nom du
+   depot passe a la ligne. Trois colonnes dans 390 px demandent plus petit. */
+@media (max-width: 520px) {
+  :root { --pad: 10px; }
+  .hud-cell { font-size: 9px; letter-spacing: .05em; }
+  .hud-cell b { font-size: 16px; }
+  .hud-cell.center b { font-size: 14px; line-height: 1.15; }
+  .hud-cell .street, .hud-cell .target { font-size: 9px; }
+  .card { padding: 18px 16px; }
+  .logo { line-height: 1; }
+  .keys { font-size: 13px; }
+}
+
+/* Paysage sur telephone : la dalle ne fait que 340 px de haut, le HUD en
+   prenait le quart. */
+@media (max-height: 430px) {
+  .hud-cell b { font-size: 14px; }
+  .hud-cell.center b { font-size: 12px; }
+  .hud-cell .street, .hud-cell .target { font-size: 8px; }
+  #callout { top: 10%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #callout { transition: none !important; }
+}
