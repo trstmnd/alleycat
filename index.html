@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0d1119">
+<title>ALLEYCAT</title>
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚲</text></svg>">
+</head>
+<body>
+<canvas id="scene"></canvas>
+
+<!-- TITRE -->
+<section id="s-title" class="screen">
+  <div class="card title-card">
+    <h1 class="logo">ALLEY<span>CAT</span></h1>
+    <p class="tag">Trois depots. Pas de minicarte. Pas de frein.</p>
+    <ul class="keys">
+      <li><kbd>&larr;</kbd><kbd>&rarr;</kbd> diriger</li>
+      <li><kbd>Espace</kbd> lancer le colis</li>
+      <li><kbd>Maj</kbd> ou les deux fleches : skider</li>
+      <li><kbd>R</kbd> repartir, tout de suite</li>
+    </ul>
+    <p class="note">Sur mobile : tiers gauche et droit pour diriger, centre pour lancer, les deux cotes ensemble pour skider.</p>
+    <button class="btn big" data-go="race">PRENDRE LE MANIFESTE</button>
+    <p class="version" id="version"></p>
+  </div>
+</section>
+
+<!-- COURSE -->
+<section id="s-race" class="screen hud">
+  <div class="hud-top">
+    <div class="hud-cell">
+      <small>CHRONO</small><b id="hud-time">00'00</b>
+      <span id="hud-target" class="target"></span>
+    </div>
+    <div class="hud-cell center">
+      <small>DEPOT <span id="hud-legs">1/3</span></small>
+      <b id="hud-drop"></b>
+      <span id="hud-street" class="street"></span>
+    </div>
+    <div class="hud-cell right">
+      <small>COLIS</small><b id="hud-parcel">EN SACOCHE</b>
+      <span class="street"><span id="hud-speed">0</span>% vitesse</span>
+    </div>
+  </div>
+
+  <div id="callout"></div>
+
+  <div id="pause">
+    <div class="card">
+      <h2>EN PAUSE</h2>
+      <p>L'onglet est passe en arriere plan. Le chrono attend.</p>
+      <button class="btn big" id="pause-resume">REPRENDRE</button>
+    </div>
+  </div>
+</section>
+
+<!-- ARRIVEE -->
+<section id="s-end" class="screen overlay">
+  <div class="card result">
+    <h2 id="end-title"></h2>
+    <div class="final" id="end-time">00'00</div>
+    <div id="end-medal" class="medal"></div>
+    <ul class="splits" id="end-splits"></ul>
+    <p id="end-best" class="note"></p>
+    <div class="row">
+      <button class="btn ghost" data-go="title">Titre</button>
+      <button class="btn big" data-go="race">REPARTIR</button>
+    </div>
+  </div>
+</section>
+
+<button id="sound" class="btn ghost icon" type="button" aria-pressed="false" title="Couper le son">
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path class="horn" d="M4 9.2h3.8L12.4 5.2v13.6L7.8 14.8H4z"/>
+    <path class="wave" d="M15.6 9.1a4.2 4.2 0 0 1 0 5.8M18.3 6.6a7.8 7.8 0 0 1 0 10.8"/>
+    <path class="slash" d="M16.2 9.6l5.4 4.8M21.6 9.6l-5.4 4.8"/>
+  </svg>
+  <span class="sr">Son</span>
+</button>
+
+<div id="loading">chargement…</div>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
