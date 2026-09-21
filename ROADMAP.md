@@ -26,7 +26,17 @@ ne commence pas avant que le precedent soit vert.
 - [x] bouton du son masque pendant la course : il tombait pile sous le pouce
       gauche, la ou on dirige
 
-## v0.3 : le jeu se laisse apprendre
+## v0.3 : le dérapage
+
+- [x] dissocier le cap de la trajectoire, angle de derive borne
+- [x] decrochage subi quand braquage x vitesse depasse l'adherence du pneu
+- [x] roue arriere bloquee a la demande, le skid stop du fixie
+- [x] la derive est le seul frein : le cout en vitesse la suit
+- [x] velo dessine avec ses deux roues, roue avant en contre-braquage
+- [x] traces depuis la roue arriere, intensite selon l'angle, calque dedie
+- [x] independance au pas de temps verifiee par `check.sh`
+
+## v0.4 : le jeu se laisse apprendre
 
 - [ ] calibrer les medailles sur de vrais runs humains, pas sur le chemin theorique
 - [ ] noms de rues lisibles sur la carte, pour pouvoir se reperer sans boussole
@@ -34,7 +44,7 @@ ne commence pas avant que le precedent soit vert.
 - [ ] ecran manifeste avant le depart : les trois adresses, trois secondes pour les lire
 - [ ] plusieurs manifestes sur la meme ville, tires dans une liste ecrite a la main
 
-## v0.4 : la matiere
+## v0.5 : la matiere
 
 - [ ] circulation : voitures qui tiennent leur file, portieres qui s'ouvrent
 - [ ] la nuit, avec une portee de vue reduite

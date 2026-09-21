@@ -34,7 +34,8 @@ rendu deterministe.
 | `src/input.js` | clavier et tactile | controles |
 | `tests/*.mjs` | les regles testees sans navigateur | toute regle de jeu |
 
-Constantes de reglage : `BIKE`, `PARCEL`, `MEDALS`, `MAP` et `DROPS`,
+Constantes de reglage : `BIKE` (dont `gripLimit`, `gripSnap`, `slideSnap`,
+`lockSnap`, `maxSlip`, `slipScrub`), `PARCEL`, `MEDALS`, `MAP` et `DROPS`,
 `VERSION` et `SIM_STEP`.
 
 ## Invariants a ne pas casser
@@ -42,34 +43,50 @@ Constantes de reglage : `BIKE`, `PARCEL`, `MEDALS`, `MAP` et `DROPS`,
 1. **La simulation tourne a pas fixe, `SIM_STEP` = 1/120 s.** Jamais sur le dt
    de `requestAnimationFrame`. Sinon un ecran 144 Hz ne joue pas le meme jeu
    qu'un 60 Hz et le fantome ment. C'est l'invariant qui porte tout le reste.
-2. **Tout est deterministe. Aucun `Math.random` dans une regle de jeu.** Memes
+2. **Le cap et la trajectoire sont deux angles differents.** `heading` est ou
+   le velo pointe, `course` ou il va, et `slip` est leur ecart : l'angle de
+   derive. Le deplacement suit `course`, jamais `heading`. C'est ce qui fait
+   exister le dérapage, et c'est ce qui le rend visible sans une seule ligne
+   de code de rendu en plus, puisque le velo est dessine selon son cap
+   pendant qu'il se deplace de travers. Recabler le deplacement sur `heading`
+   supprimerait le dérapage tout en gardant l'illusion que le code en fait un.
+3. **Un fixie n'a pas de frein : la seule facon de ralentir est de faire
+   glisser le pneu arriere.** Le cout en vitesse est donc proportionnel a
+   `slip`, pas au braquage. Un freinage qui ne passerait pas par la derive
+   serait un velo a patins, pas un pignon fixe.
+4. **Le decrochage est d'abord subi, pas demande.** Quand `braquage x vitesse`
+   depasse `gripLimit`, l'arriere part tout seul : un virage trop sec derape
+   sans que le joueur appuie sur quoi que ce soit. Le bouton sert a casser
+   l'adherence volontairement dans les virages qui tiendraient, pas a deraper
+   davantage : a braquage plein le decrochage subi sature deja a `maxSlip`.
+5. **Tout est deterministe. Aucun `Math.random` dans une regle de jeu.** Memes
    entrees, meme resultat au bit pres. `tests/determinisme.mjs` le verifie, et
    c'est ce qui rend le restart instantane honnete : l'echec est toujours la
    faute du joueur. Un colis qu'autre chose que le joueur pourrait pousser
    detruirait le jeu.
-3. **`city.js`, `bike.js`, `parcel.js`, `race.js` et `ghost.js` ne touchent ni
+6. **`city.js`, `bike.js`, `parcel.js`, `race.js` et `ghost.js` ne touchent ni
    au DOM ni au canvas.** C'est ce qui permet de tester les regles sans
    navigateur. Un `document` dans un de ces fichiers casse `tests/`.
-4. **La collision se resout axe par axe.** Bloque sur un seul axe, on glisse le
+7. **La collision se resout axe par axe.** Bloque sur un seul axe, on glisse le
    long du mur et on perd un peu de vitesse. Bloque sur les deux, on l'a pris de
    face et on pose le pied. Resoudre les deux axes ensemble collerait le velo
    aux murs et rendrait les lignes serrees impossibles.
-5. **La carte est ecrite a la main, jamais generee.** Une ville procedurale ne
+8. **La carte est ecrite a la main, jamais generee.** Une ville procedurale ne
    s'apprend pas, et la connaitre est tout le sujet.
-6. **La camera ne tourne jamais**, nord en haut. Suivre le cap serait plus
+9. **La camera ne tourne jamais**, nord en haut. Suivre le cap serait plus
    immersif et rendrait la ville inapprenable.
    Elle se desserre en dessous de `VIEW_MIN` unites visibles sur le petit cote
    (un portrait de telephone ne montrerait qu'une dizaine de cases), elle a le
    droit de deborder de la ville de `EDGE_SLACK` d'ecran (sinon le coursier
    colle au bord au depart), et elle le remonte d'un cran sur petit ecran pour
    qu'il ne roule pas sous les pouces. Les trois sont dans `src/render.js`.
-7. **Aucun chargement distant.** Pas de CDN, pas d'importmap, pas de police
+10. **Aucun chargement distant.** Pas de CDN, pas d'importmap, pas de police
    Google. `check.sh` echoue sinon.
-8. **Aucun tiret cadratin** dans `index.html`, `style.css`, `src/`, `tests/`,
+11. **Aucun tiret cadratin** dans `index.html`, `style.css`, `src/`, `tests/`,
    `README.md`, `AGENTS.md`, `ROADMAP.md`. `check.sh` echoue sinon.
-9. **`VERSION` se bumpe a chaque livraison**, et la ligne du tableau des
+12. **`VERSION` se bumpe a chaque livraison**, et la ligne du tableau des
    versions du README se remplit.
-10. **Pas de dependance npm, pas d'etape de build, pas de fichier binaire.**
+13. **Pas de dependance npm, pas d'etape de build, pas de fichier binaire.**
 
 ## Boucle de travail
 

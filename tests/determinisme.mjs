@@ -26,7 +26,7 @@ function replay() {
 
 const a = replay();
 const z = replay();
-for (const k of ['x', 'y', 'heading', 'speed', 'stun']) {
+for (const k of ['x', 'y', 'heading', 'course', 'slip', 'speed', 'stun']) {
   ok(a.b[k] === z.b[k], 'velo non deterministe sur ' + k + ' : ' + a.b[k] + ' contre ' + z.b[k]);
 }
 ok(a.p.x === z.p.x && a.p.y === z.p.y, 'colis non deterministe');

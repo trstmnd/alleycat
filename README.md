@@ -19,6 +19,26 @@ de frein. Tu connais la ville ou tu la decouvres en la payant.
 Sur mobile : tiers gauche et tiers droit pour diriger, tiers central pour
 lancer, les deux cotes ensemble pour skider.
 
+## Le dérapage
+
+Un fixie n'a pas de frein. Le seul moyen de ralentir est de bloquer les jambes
+et de faire glisser le pneu arriere. Le jeu prend ca au pied de la lettre :
+**le cap du velo et sa trajectoire reelle sont deux choses differentes**, et
+leur ecart est l'angle de derive.
+
+- En adherence, les deux se confondent presque : le velo va ou il pointe.
+- **Quand braquage x vitesse depasse ce que le pneu tient, l'arriere part tout
+  seul.** Pas besoin d'appuyer sur quoi que ce soit : un virage trop sec a plus
+  de la moitie de la vitesse maximale derape, et c'est tout.
+- Le bouton de skid bloque la roue volontairement. Il sert dans les virages qui
+  tiendraient tout seuls, pour casser l'adherence quand on le decide.
+- Plus l'angle est ouvert, plus on ralentit. Le dérapage n'est pas une punition,
+  c'est le frein.
+
+A l'ecran, rien n'est simule en plus : le velo est dessine selon son cap pendant
+qu'il se deplace selon sa trajectoire, donc il part de travers tout seul. La roue
+avant contre-braque, et la trace noire part de la roue arriere, pas du centre.
+
 ## Ce qui rend le jeu different d'un time attack
 
 **On ne s'arrete jamais a un depot, on y jette le colis en passant.** Le colis
@@ -109,6 +129,7 @@ Le numero s'affiche sur l'ecran titre. Il vit dans `src/main.js`
 |---|---|
 | v0.1 | ville fixe, trois depots, lancer du colis, skid, fantome, medailles, records locaux |
 | v0.2 | tient sur un telephone : zoom adaptatif, zones tactiles degagees |
+| v0.3 | dérapage de fixie : cap et trajectoire dissocies, decrochage en virage sec, traces depuis la roue arriere |
 
 ## Publication
 

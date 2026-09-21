@@ -97,6 +97,9 @@ kbd {
 .hud-cell .street { display: block; font-size: 11px; opacity: .75; letter-spacing: 0; }
 .hud-cell .target { display: block; font-size: 11px; color: var(--good); letter-spacing: 0; }
 #hud-parcel.warn { color: var(--warn); }
+/* Le pourcentage de vitesse vire a l'orange pendant un dérapage : c'est
+   le seul endroit du HUD qui dit que le pneu ne tient plus. */
+.hud-cell.sliding .street { color: var(--warn); }
 
 /* Haut de l'ecran et taille contenue : au centre le callout se posait pile sur
    le coursier et masquait la zone de depot au moment ou on la regarde. */

@@ -20,7 +20,10 @@ const C = {
   ghost: 'rgba(160,190,220,.34)',
   zone: '#7dffa8',
   parcel: '#ffcf5c',
-  skid: 'rgba(0,0,0,.42)'
+  skidInk: '#05070b',
+  // Clair, et surtout pas proche de la couleur de l'asphalte : le cadre se
+  // detache sur le halo sombre, sinon on ne voit que le point du coursier.
+  bike: '#a8bdd6'
 };
 
 // La ville est dessinee une fois dans un canvas hors ecran, puis recopiee.
@@ -101,41 +104,92 @@ export function createRenderer(canvas) {
   // Le coursier doit rester trouvable d'un coup d'oeil sur une ville sombre et
   // dense : un halo noir dessous, une fleche vive dessus, et une taille qui ne
   // depend pas de l'echelle de la ville.
-  function rider(g, x, y, heading, color, alpha, halo, scale) {
+  // Un velo vu de dessus, pas une fleche. Deux roues alignees sur le cadre
+  // donnent la direction du cap ; comme le deplacement suit la trajectoire, la
+  // derive se lit toute seule : le velo part de travers. La roue avant
+  // contre-braque, ce que fait vraiment un pilote quand l'arriere decroche.
+  function rider(g, x, y, heading, slip, color, alpha, halo, scale) {
     g.save();
     g.globalAlpha = alpha;
     g.translate(x, y);
     if (scale && scale !== 1) g.scale(scale, scale);
     if (halo) {
-      g.fillStyle = 'rgba(0,0,0,.5)';
+      g.fillStyle = 'rgba(0,0,0,.58)';
       g.beginPath();
-      g.arc(0, 0, 13, 0, Math.PI * 2);
+      g.arc(0, 0, 17, 0, Math.PI * 2);
       g.fill();
     }
     g.rotate(heading);
+    g.scale(1.15, 1.15);
+
+    const wheel = (cx, angle) => {
+      g.save();
+      g.translate(cx, 0);
+      g.rotate(angle);
+      g.fillStyle = C.bike;
+      g.fillRect(-5, -1.7, 10, 3.4);
+      g.restore();
+    };
+
+    wheel(-9, 0);
+    // Contre-braquage : la roue avant pointe a l'oppose du dérapage, comme un
+    // pilote qui rattrape l'arriere. C'est le signe le plus lisible d'un skid.
+    wheel(10, Math.max(-0.7, Math.min(0.7, -(slip || 0) * 0.9)));
+
+    g.strokeStyle = C.bike;
+    g.lineWidth = 2.4;
+    g.lineCap = 'round';
     g.beginPath();
-    g.moveTo(15, 0);
-    g.lineTo(-9, -7.5);
-    g.lineTo(-5, 0);
-    g.lineTo(-9, 7.5);
-    g.closePath();
+    g.moveTo(-9, 0);
+    g.lineTo(10, 0);
+    g.stroke();
+
+    // Le coursier vu de dessus : des epaules en travers du cadre, une tete.
     g.fillStyle = color;
+    g.beginPath();
+    g.ellipse(-1, 0, 4.2, 5.8, 0, 0, Math.PI * 2);
     g.fill();
-    if (halo) {
-      g.lineWidth = 1.6;
-      g.strokeStyle = 'rgba(8,14,24,.9)';
-      g.stroke();
-    }
+    g.fillStyle = color;
+    g.beginPath();
+    g.arc(3, 0, 2.5, 0, Math.PI * 2);
+    g.fill();
     g.restore();
   }
 
+  // Les traces vivent dans leur propre calque, a l'echelle du monde. On y
+  // ajoute chaque segment une seule fois au lieu de retracer tout l'historique
+  // a chaque image : le cout par image devient constant, et les passages
+  // repetes se superposent et noircissent, comme de vraies traces.
+  const skidLayer = document.createElement('canvas');
+  skidLayer.width = WORLD_W;
+  skidLayer.height = WORLD_H;
+  const sg = skidLayer.getContext('2d');
+  sg.lineCap = 'round';
+  sg.strokeStyle = C.skidInk;
+
   return {
     resize,
+
+    // `force` va de 0 a 1 : une derive naissante laisse une trace pale et
+    // fine, une roue bloquee laisse un trait noir et large.
+    addSkid(x1, y1, x2, y2, force) {
+      const f = Math.max(0, Math.min(1, force));
+      sg.globalAlpha = 0.07 + 0.4 * f;
+      sg.lineWidth = 2.6 + 2.6 * f;
+      sg.beginPath();
+      sg.moveTo(x1, y1);
+      sg.lineTo(x2, y2);
+      sg.stroke();
+      sg.globalAlpha = 1;
+    },
+
+    clearSkids() { sg.clearRect(0, 0, WORLD_W, WORLD_H); },
+
     get width() { return w; },
     get height() { return h; },
 
     draw(state) {
-      const { bike, target, parcels, flying, skids, ghost, t } = state;
+      const { bike, target, parcels, flying, ghost, t } = state;
 
       // Zoom : a l'echelle du bureau, un telephone en portrait ne montrerait
       // qu'une dizaine de cases de large et la ville serait illisible. On
@@ -170,16 +224,8 @@ export function createRenderer(canvas) {
 
       ctx.drawImage(city, 0, 0);
 
-      // Traces de skid, sous tout le reste
-      ctx.strokeStyle = C.skid;
-      ctx.lineWidth = 4;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      for (const s of skids) {
-        ctx.moveTo(s[0], s[1]);
-        ctx.lineTo(s[2], s[3]);
-      }
-      ctx.stroke();
+      // Traces de dérapage, sous tout le reste
+      ctx.drawImage(skidLayer, 0, 0);
 
       // Zone de depot courante
       if (target) {
@@ -205,8 +251,8 @@ export function createRenderer(canvas) {
       // Au dezoom le coursier grossit un peu pour rester trouvable, plafonne
       // pour qu'il ne mente pas trop sur sa boite de collision.
       const rs = Math.min(1.5, 1 / zoom);
-      if (ghost) rider(ctx, ghost.x, ghost.y, ghost.heading, C.ghost, 1, false, rs);
-      rider(ctx, bike.x, bike.y, bike.heading, C.rider, 1, true, rs);
+      if (ghost) rider(ctx, ghost.x, ghost.y, ghost.heading, ghost.slip, C.ghost, 1, false, rs);
+      rider(ctx, bike.x, bike.y, bike.heading, bike.slip, C.rider, 1, true, rs);
 
       if (flying) {
         ctx.fillStyle = C.parcel;

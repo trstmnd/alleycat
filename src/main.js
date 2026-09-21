@@ -2,7 +2,7 @@
 // Seul module qui touche au DOM.
 
 import * as City from './city.js';
-import { newBike, stepBike, BIKE } from './bike.js';
+import { newBike, stepBike, rearWheel, BIKE } from './bike.js';
 import { throwParcel, stepParcel, inZone, PARCEL } from './parcel.js';
 import * as Race from './race.js';
 import { newRecorder, record, sampleAt } from './ghost.js';
@@ -10,7 +10,7 @@ import { createRenderer } from './render.js';
 import { newInput, install } from './input.js';
 import { sfx, skidSound, setMuted, isMuted, wake } from './audio.js';
 
-export const VERSION = 'v0.2';
+export const VERSION = 'v0.3';
 
 // Pas de simulation fixe. La boucle rAF a un dt variable : simuler dessus
 // rendrait la course dependante du taux de rafraichissement et le fantome
@@ -18,10 +18,9 @@ export const VERSION = 'v0.2';
 export const SIM_STEP = 1 / 120;
 
 const KEY_BEST = 'alleycat.best';
-const KEY_GHOST = 'alleycat.ghost';
+const KEY_GHOST = 'alleycat.ghost.v2';
 const KEY_MUTE = 'alleycat.muted';
 const PICKUP = 22;
-const MAX_SKIDS = 900;
 
 const $ = (s) => document.querySelector(s);
 const el = {
@@ -36,7 +35,7 @@ const el = {
 let view, input;
 let screen = 'title';
 let bike, race, rec, ghostSamples, flying, onGround, carrying;
-let parcels = [], skids = [];
+let parcels = [];
 let best = Number(localStorage.getItem(KEY_BEST) || 0) || null;
 let acc = 0, last = 0, clock = 0, paused = false;
 
@@ -56,6 +55,7 @@ function loadGhost() {
 }
 
 function reset() {
+  if (!view) return; // boot() appelle reset() une fois le renderer pret
   const s = City.center(City.START);
   bike = newBike(s.x, s.y, City.START.heading);
   race = Race.newRace(City.DROPS.length);
@@ -65,7 +65,11 @@ function reset() {
   onGround = null;
   carrying = true;
   parcels = [];
-  skids = [];
+  view.clearSkids();
+  // Sans ca, le "MANIFESTE BOUCLE" du run precedent reste affiche au depart
+  // du suivant.
+  el.callout.textContent = '';
+  el.callout.className = '';
   acc = 0;
   paused = false;
   el.pause.classList.remove('on');
@@ -91,6 +95,7 @@ function refreshHud() {
   el.street.textContent = d ? d.street : '';
   el.legs.textContent = Math.min(race.leg + 1, race.total) + '/' + race.total;
   el.speed.textContent = Math.round(bike.speed / BIKE.maxSpeed * 100);
+  el.speed.parentElement.classList.toggle('sliding', bike.sliding);
   el.parcel.textContent = flying ? 'EN L\'AIR' : onGround ? 'AU SOL' : 'EN SACOCHE';
   el.parcel.className = onGround ? 'warn' : '';
   const m = Race.MEDALS.find((x) => race.t <= x.time);
@@ -103,15 +108,18 @@ function simulate(dt) {
   if (race.done) return;
   race.t += dt;
 
-  const wasSkid = bike.skid;
-  const px = bike.x, py = bike.y;
+  const wasSliding = bike.sliding;
+  const before = rearWheel(bike);
   stepBike(bike, input.steer, input.skid, dt, City.solid);
 
-  if (bike.skid) {
-    skids.push([px, py, bike.x, bike.y]);
-    if (skids.length > MAX_SKIDS) skids.shift();
+  // La trace part de la roue arriere, celle qui glisse, et non du centre du
+  // velo. Son intensite suit l'angle de derive : un virage un peu trop sec
+  // laisse un trait pale, une roue bloquee laisse une marque noire.
+  if (bike.sliding) {
+    const after = rearWheel(bike);
+    view.addSkid(before.x, before.y, after.x, after.y, Math.abs(bike.slip) / BIKE.maxSlip);
   }
-  if (bike.skid !== wasSkid) skidSound(bike.skid);
+  if (bike.sliding !== wasSliding) skidSound(bike.sliding);
   if (bike.hit === 2) sfx.crash();
   else if (bike.hit === 1) sfx.graze();
 
@@ -200,7 +208,7 @@ function loop(now) {
     view.draw({
       bike, target: screen === 'race' ? targetCenter() : null,
       parcels: onGround ? parcels.concat([{ x: onGround.x, y: onGround.y, ok: false }]) : parcels,
-      flying, skids, t: clock,
+      flying, t: clock,
       ghost: screen === 'race' && ghostSamples ? sampleAt(ghostSamples, race.t) : null
     });
   }
