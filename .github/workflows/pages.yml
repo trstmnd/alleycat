@@ -28,6 +28,21 @@ jobs:
           mkdir -p _site
           cp index.html style.css _site/
           cp -r src _site/
+          # Jekyll ne doit pas toucher au site. peaceiris le pose deja, on ne
+          # depend pas de lui pour un fichier aussi structurant.
+          touch _site/.nojekyll
+          # Empreinte de la livraison. Elle change a chaque commit, donc chaque
+          # push produit un vrai commit sur gh-pages et GitHub Pages
+          # reconstruit. Sans elle, un commit qui ne touche qu'a la doc ne
+          # redeploie rien du tout et le site reste sur l'ancienne version sans
+          # que rien ne le signale.
+          # C'est aussi la seule sonde pour savoir ce qui est REELLEMENT en
+          # ligne : ouvrir /version.txt repond le SHA servi.
+          {
+            echo "commit  $GITHUB_SHA"
+            echo "branche $GITHUB_REF_NAME"
+            echo "publie  $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } > _site/version.txt
 
       - name: Calculer le dossier de destination
         id: dest
