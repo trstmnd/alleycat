@@ -176,5 +176,17 @@ Le workflow `.github/workflows/pages.yml` publie a chaque push : `main` va a la
 racine, toute autre branche va dans `preview/<branche>` sur `gh-pages`. Les
 controles tournent avant, un `check.sh` rouge bloque la publication.
 
-Une fois pour toutes : **Settings > Pages > Source** sur la branche `gh-pages`,
-racine.
+Une fois pour toutes, et **a la main, l'API ne le fait pas** :
+**Settings > Pages > Build and deployment > Source = "Deploy from a branch"**,
+branche `gh-pages`, dossier `/ (root)`.
+
+Le piege : un depot recent arrive avec la source **"GitHub Actions"**, qui
+ignore totalement la branche `gh-pages`. Le workflow tourne vert, `gh-pages` se
+remplit, et le site repond 404 sans que rien ne le signale. Un depot dont Pages
+sert une branche possede un second workflow, `pages-build-deployment`, que
+GitHub cree lui-meme : s'il n'apparait pas dans l'onglet Actions, c'est que le
+reglage n'est pas fait.
+
+Pour savoir ce qui est reellement en ligne, ouvrir **`/version.txt`** a la
+racine du site : il rend le SHA du commit servi, sa branche et l'heure de
+publication.

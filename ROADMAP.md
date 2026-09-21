@@ -4,8 +4,22 @@
 
 **Dernier point : 21 septembre 2026, v0.4 en ligne.**
 
-Quatre livraisons poussees sur `main`, 38 controles verts, publie sur GitHub
-Pages a chaque push. Rien n'est en cours, rien n'est casse, l'arbre est propre.
+Quatre livraisons poussees sur `main`, 38 controles verts, arbre propre.
+
+**Le site n'est pas en ligne, et ce n'est pas un bug du depot.** GitHub Pages
+n'a jamais ete active sur `alleycat` : le workflow construit et pousse
+`gh-pages` correctement a chaque commit, mais rien ne le sert. La preuve tient
+en une comparaison : `dods-3000`, dont le site fonctionne, possede deux
+workflows, le notre plus `pages-build-deployment` que **GitHub cree lui-meme**
+quand Pages est regle sur une branche. `alleycat` n'a que le notre.
+
+Le reglage est manuel et ne se fait pas par l'API : **Settings > Pages > Build
+and deployment > Source = "Deploy from a branch", branche `gh-pages`, dossier
+`/ (root)`**. Attention au piege : les depots recents arrivent avec la source
+"GitHub Actions", qui ignore completement la branche `gh-pages`.
+
+Pour verifier sans deviner, ouvrir `/version.txt` a la racine du site : il rend
+le SHA du commit reellement servi.
 Tout le contexte necessaire est dans ce depot : `AGENTS.md` pour les invariants,
 `README.md` pour le fonctionnement, ce fichier pour la suite.
 
