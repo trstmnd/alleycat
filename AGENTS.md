@@ -33,6 +33,7 @@ rendu deterministe.
 | `src/audio.js` | sons synthetises | son |
 | `src/input.js` | clavier et tactile | controles |
 | `tests/*.mjs` | les regles testees sans navigateur | toute regle de jeu |
+| `tools/autopilote.mjs` | boucle le manifeste dans un vrai navigateur | verifier la course de bout en bout |
 
 Constantes de reglage : `BIKE` (dont `gripLimit`, `gripSnap`, `slideSnap`,
 `lockSnap`, `maxSlip`, `slipScrub`), `PARCEL`, `MEDALS`, `MAP` et `DROPS`,
@@ -99,6 +100,22 @@ plutot que dans la boucle est gratuit.
 
 Les traces de dérapage ont leur propre calque a l'echelle du monde, alimente une
 fois par segment. Ne pas revenir a un chemin retrace a chaque image.
+
+## Verifier la course de bout en bout
+
+`check.sh` teste les regles une par une, jamais la course entiere.
+`tools/autopilote.mjs` ouvre le jeu dans Chromium, calcule le chemin optimal,
+le suit et lance les trois colis. C'est la seule mesure qui prouve que le
+manifeste est bouclable, et le repere du bareme des medailles.
+
+```bash
+python3 -m http.server 8012
+node tools/autopilote.mjs http://localhost:8012
+```
+
+Il a besoin de Playwright, volontairement **hors du depot** : un `npm i` local
+poserait un `package.json` et `check.sh` refuse d'en voir un. Installation
+globale, ou `PLAYWRIGHT_MODULE` pointe sur le module.
 
 ## Boucle de travail
 

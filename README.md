@@ -6,6 +6,22 @@ chargee depuis un CDN.
 
 **Jouer : https://trstmnd.github.io/alleycat/**
 
+## D'ou vient le nom
+
+`Alley cat`, le chat de gouttiere : l'errant qui rode dans les ruelles,
+debrouillard, sans maitre, qui passe la ou personne ne passe.
+
+Un alleycat est une course sauvage de coursiers a velo, non homologuee, dans la
+circulation reelle. Nee dans le milieu des messagers de Toronto, en 1989, avec
+une course appelee l'Alleycat Scramble. C'est une parodie de journee de travail :
+un manifeste d'adresses, aucun itineraire fourni, un tampon a chaque checkpoint,
+premier arrive premier servi. Deux marqueurs culturels : la **spoke card**
+glissee dans les rayons, et le **pignon fixe sans frein**.
+
+Les choix de ce jeu ne sont pas des libertes prises avec le format, ils le
+decrivent : pas de minicarte parce que connaitre la ville est la competence, un
+manifeste de trois depots, pas de frein, et on ne pose pas le pied.
+
 ## Le principe
 
 Tu recois un manifeste de trois depots. Pas de minicarte, pas d'itineraire, pas
