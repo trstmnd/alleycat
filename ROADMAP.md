@@ -36,7 +36,18 @@ ne commence pas avant que le precedent soit vert.
 - [x] traces depuis la roue arriere, intensite selon l'angle, calque dedie
 - [x] independance au pas de temps verifiee par `check.sh`
 
-## v0.4 : le jeu se laisse apprendre
+## v0.4 : la ville a une matiere
+
+- [x] etiquetage des paves en composantes connexes, teinte et hauteur par pave
+- [x] quatre quartiers, un par quadrant, a saturation tres basse
+- [x] variation de valeur par pave, deterministe
+- [x] trottoirs et caniveaux le long de chaque pave
+- [x] axe pointille dans les deux sens (les rues verticales n'en avaient aucun)
+- [x] passages pietons aux vrais carrefours seulement, pas sur les esplanades
+- [x] plaques d'egout semees de facon deterministe
+- [x] ombres portees directionnelles, longueur selon la hauteur du pave
+
+## v0.5 : le jeu se laisse apprendre
 
 - [ ] calibrer les medailles sur de vrais runs humains, pas sur le chemin theorique
 - [ ] noms de rues lisibles sur la carte, pour pouvoir se reperer sans boussole
@@ -44,7 +55,7 @@ ne commence pas avant que le precedent soit vert.
 - [ ] ecran manifeste avant le depart : les trois adresses, trois secondes pour les lire
 - [ ] plusieurs manifestes sur la meme ville, tires dans une liste ecrite a la main
 
-## v0.5 : la matiere
+## v0.6 : la matiere
 
 - [ ] circulation : voitures qui tiennent leur file, portieres qui s'ouvrent
 - [ ] la nuit, avec une portee de vue reduite

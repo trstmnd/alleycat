@@ -88,6 +88,18 @@ Constantes de reglage : `BIKE` (dont `gripLimit`, `gripSnap`, `slideSnap`,
    versions du README se remplit.
 13. **Pas de dependance npm, pas d'etape de build, pas de fichier binaire.**
 
+## Ou depenser le budget graphique
+
+`bakeCity()` dans `src/render.js` ne tourne qu'une fois : **tout ce qui y est
+dessine coute zero par image**. Trottoirs, marquage, plaques d'egout, teintes de
+quartier, ombres portees y sont deja. Mesure : 16,7 ms de frame mediane, p99 a
+16,8, sur les deux gabarits, soit une fraction de pour cent du budget. Le jeu
+n'a aucun probleme de performance ; tout gain visuel qui peut aller dans le bake
+plutot que dans la boucle est gratuit.
+
+Les traces de dérapage ont leur propre calque a l'echelle du monde, alimente une
+fois par segment. Ne pas revenir a un chemin retrace a chaque image.
+
 ## Boucle de travail
 
 ```bash

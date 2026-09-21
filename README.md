@@ -19,6 +19,16 @@ de frein. Tu connais la ville ou tu la decouvres en la payant.
 Sur mobile : tiers gauche et tiers droit pour diriger, tiers central pour
 lancer, les deux cotes ensemble pour skider.
 
+## Les quartiers
+
+La ville est decoupee en quatre quartiers, un par quadrant, qui ont chacun leur
+teinte : bleu ardoise, cyan sourd, violet, pierre chaude. La saturation reste
+tres basse pour que ca reste une ville de nuit, mais les grandes surfaces
+suffisent a rendre la teinte lisible.
+
+Ce n'est pas de la decoration : **sans minicarte, la couleur du quartier est ce
+qui dit ou on se trouve.** C'est le premier repere qu'on apprend.
+
 ## Le dérapage
 
 Un fixie n'a pas de frein. Le seul moyen de ralentir est de bloquer les jambes
@@ -52,6 +62,18 @@ C'est ce qui permet de garder la boucle de Trackmania par dessus : restart
 instantane, fantome de ton record, chasse aux medailles. Un time attack ne
 supporte pas l'aleatoire, parce que le joueur doit pouvoir se dire que l'echec
 etait entierement de sa faute.
+
+## Ou va le budget graphique
+
+Mesure faite : 16,7 ms de frame mediane, p99 a 16,8, sur ordinateur comme sur
+telephone. Le jeu est colle a 60 images par seconde et consomme une fraction de
+pour cent de son budget. Il n'y a rien a optimiser.
+
+En revanche **`bakeCity()` ne tourne qu'une fois**, au demarrage. Tout ce qui y
+est dessine coute exactement zero par image. Les trottoirs, le marquage au sol,
+les plaques d'egout, les teintes de quartier et les ombres portees sont tous la.
+C'est le bon endroit pour depenser : a chaque fois qu'un detail peut y aller
+plutot que dans la boucle de rendu, il doit y aller.
 
 ## Ce qu'il faut savoir avant de toucher au code
 
@@ -129,6 +151,7 @@ Le numero s'affiche sur l'ecran titre. Il vit dans `src/main.js`
 |---|---|
 | v0.1 | ville fixe, trois depots, lancer du colis, skid, fantome, medailles, records locaux |
 | v0.2 | tient sur un telephone : zoom adaptatif, zones tactiles degagees |
+| v0.4 | la ville a une matiere : quartiers colores, trottoirs, marquage au sol, ombres portees |
 | v0.3 | dérapage de fixie : cap et trajectoire dissocies, decrochage en virage sec, traces depuis la roue arriere |
 
 ## Publication
