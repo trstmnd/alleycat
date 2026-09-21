@@ -89,26 +89,52 @@ jobs:
       name: github-pages
       url: ${{ steps.deploiement.outputs.page_url }}
     steps:
+      # Le jeton d'Actions peut modifier un site Pages existant, mais GitHub lui
+      # refuse la CREATION d'un site, dans les deux modes, meme avec pages:write
+      # accorde : "Resource not accessible by integration" sur
+      # create-a-pages-site. Verifie sur ce depot par les deux voies.
+      # Tant que le site n'existe pas, on ne fait pas echouer la livraison pour
+      # autant : les controles et gh-pages, eux, sont bons. On previent, et le
+      # jour ou Pages est active le deploiement repart tout seul.
+      - name: Pages est-il actif ?
+        id: etat
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          if gh api "repos/$REPO/pages" >/dev/null 2>&1; then
+            echo "actif=oui" >> "$GITHUB_OUTPUT"
+            echo "Pages actif, on deploie."
+          else
+            echo "actif=non" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Site non mis en ligne::GitHub Pages n'est pas active sur ce depot et le jeton d'Actions n'a pas le droit de creer le site. Reglage unique requis : Settings > Pages > Deploy from a branch > gh-pages > / (root). gh-pages est a jour, le site partira au prochain push une fois le reglage fait."
+          fi
+
       - name: Recuperer la reserve
+        if: steps.etat.outputs.actif == 'oui'
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: gh-pages
           path: site
 
       - name: Retirer le .git de la reserve
+        if: steps.etat.outputs.actif == 'oui'
         # Sinon l'historique entier partirait dans l'artefact publie.
         run: rm -rf site/.git
 
       - name: Activer Pages si ce n'est pas deja fait
+        if: steps.etat.outputs.actif == 'oui'
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
         with:
           enablement: true
 
       - name: Televerser le site
+        if: steps.etat.outputs.actif == 'oui'
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
         with:
           path: site
 
       - name: Deployer
+        if: steps.etat.outputs.actif == 'oui'
         id: deploiement
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5
