@@ -10,12 +10,31 @@ const VIEW_MIN = 620;
 // Debordement autorise de la camera hors de la ville, en fraction d'ecran.
 const EDGE_SLACK = 0.16;
 
+// Quatre quartiers, un par quadrant de la ville. Tous sombres et desatures
+// pour que la ville reste une ville de nuit et que le cyan du coursier
+// continue de ressortir, mais assez distincts pour servir de reperes : sans
+// minicarte, la couleur du quartier est ce qui dit ou on se trouve.
+// A saturation egale, un violet ou un ocre pesent plus lourd a l'oeil qu'un
+// bleu ou un cyan : les deux derniers sont baisses pour que les quatre
+// quartiers aient le meme poids.
+// La saturation reste basse : un toit large a 20 % de saturation devient une
+// tache de couleur et casse la ville de nuit. La teinte se lit quand meme
+// parce qu'elle couvre de grandes surfaces, et le lisere, fin, porte le reste.
+const DISTRICTS = [
+  { h: 218, s: 13 }, // nord-ouest : bleu ardoise
+  { h: 192, s: 12 }, // nord-est : cyan sourd
+  { h: 278, s: 8 },  // sud-ouest : violet sourd
+  { h: 32, s: 9 }    // sud-est : pierre chaude
+];
+
 const C = {
   road: '#1b2130',
   roadLine: '#2a3346',
+  sidewalk: '#252c3d',
+  gutter: '#141926',
+  paint: 'rgba(196,214,238,.16)',
   wall: '#0d1119',
-  wallTop: '#2b3448',
-  wallEdge: '#39455e',
+  shadow: 'rgba(4,6,10,.55)',
   rider: '#6ee7ff',
   ghost: 'rgba(160,190,220,.34)',
   zone: '#7dffa8',
@@ -26,58 +45,216 @@ const C = {
   bike: '#a8bdd6'
 };
 
+const hsl = (h, s, l) => 'hsl(' + h + ',' + s.toFixed(1) + '%,' + l.toFixed(1) + '%)';
+
+// Bruit deterministe sur une paire d'entiers. La ville doit etre identique
+// d'une partie a l'autre, donc pas de Math.random ici non plus.
+function hash2(a, b) {
+  let h = (a * 374761393 + b * 668265263) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
+const isRoad = (cx, cy) =>
+  cx >= 0 && cy >= 0 && cx < COLS && cy < ROWS && MAP[cy][cx] === '.';
+
+// Un pave est une composante connexe de '#'. On les etiquette pour donner a
+// chacun sa teinte et sa hauteur, au lieu de traiter chaque cellule isolement :
+// sans ca un meme immeuble serait bariole cellule par cellule.
+function labelBlocks() {
+  const id = new Int16Array(COLS * ROWS).fill(-1);
+  const blocks = [];
+  for (let cy = 0; cy < ROWS; cy++) {
+    for (let cx = 0; cx < COLS; cx++) {
+      if (MAP[cy][cx] !== '#' || id[cy * COLS + cx] !== -1) continue;
+      const n = blocks.length;
+      const cells = [];
+      const q = [[cx, cy]];
+      id[cy * COLS + cx] = n;
+      let sx = 0, sy = 0, minX = cx, minY = cy;
+      while (q.length) {
+        const [x, y] = q.pop();
+        cells.push([x, y]);
+        sx += x; sy += y;
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const nx = x + dx, ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= COLS || ny >= ROWS) continue;
+          if (MAP[ny][nx] !== '#' || id[ny * COLS + nx] !== -1) continue;
+          id[ny * COLS + nx] = n;
+          q.push([nx, ny]);
+        }
+      }
+      const gx = sx / cells.length, gy = sy / cells.length;
+      const r = hash2(minX, minY);
+      const d = DISTRICTS[(gx > COLS / 2 ? 1 : 0) + (gy > ROWS / 2 ? 2 : 0)];
+      blocks.push({
+        cells,
+        // Variation de valeur par pave : c'est ce qui casse l'effet de dalles
+        // grises identiques, pour trois lignes et zero cout par image.
+        roof: hsl(d.h, d.s, 20.5 + r * 5.5),
+        edge: hsl(d.h, d.s + 14, 34 + r * 6),
+        // Hauteur fictive, qui ne sert qu'a la longueur de l'ombre portee.
+        height: 6 + hash2(minY + 31, minX + 17) * 10
+      });
+    }
+  }
+  return blocks;
+}
 // La ville est dessinee une fois dans un canvas hors ecran, puis recopiee.
-// 1536 cellules redessinees a chaque frame couteraient cher pour rien.
+// Tout ce qui est ici coute zero par image : c'est la que va le budget.
 function bakeCity() {
   const c = document.createElement('canvas');
   c.width = WORLD_W;
   c.height = WORLD_H;
   const g = c.getContext('2d');
+  const blocks = labelBlocks();
 
+  // 1. la chaussee
   g.fillStyle = C.road;
   g.fillRect(0, 0, WORLD_W, WORLD_H);
+
+  // 2. plaques d'egout, semees de facon deterministe
+  for (let cy = 0; cy < ROWS; cy++) {
+    for (let cx = 0; cx < COLS; cx++) {
+      if (MAP[cy][cx] !== '.') continue;
+      const r = hash2(cx + 101, cy + 7);
+      if (r > 0.055) continue;
+      g.fillStyle = C.gutter;
+      g.beginPath();
+      g.arc((cx + 0.3 + r * 7) * CELL, (cy + 0.35 + r * 5) * CELL, 3.6, 0, Math.PI * 2);
+      g.fill();
+    }
+  }
+
+  // 3. trottoirs : une bande claire du cote chaussee de chaque pave, avec son
+  // caniveau. C'est ce qui fait que la rue arrete d'etre un fond et devient
+  // une rue.
+  const SW = 7;
+  for (let cy = 0; cy < ROWS; cy++) {
+    for (let cx = 0; cx < COLS; cx++) {
+      if (MAP[cy][cx] !== '#') continue;
+      const x = cx * CELL, y = cy * CELL;
+      const band = (bx, by, bw, bh, gx, gy, gw, gh) => {
+        g.fillStyle = C.sidewalk;
+        g.fillRect(bx, by, bw, bh);
+        g.fillStyle = C.gutter;
+        g.fillRect(gx, gy, gw, gh);
+      };
+      if (isRoad(cx, cy - 1)) band(x, y - SW, CELL, SW, x, y - SW - 1.5, CELL, 1.5);
+      if (isRoad(cx, cy + 1)) band(x, y + CELL, CELL, SW, x, y + CELL + SW, CELL, 1.5);
+      if (isRoad(cx - 1, cy)) band(x - SW, y, SW, CELL, x - SW - 1.5, y, 1.5, CELL);
+      if (isRoad(cx + 1, cy)) band(x + CELL, y, SW, CELL, x + CELL + SW, y, 1.5, CELL);
+    }
+  }
+
+  // 4. marquage au sol : axe pointille dans les rues qui continuent tout
+  // droit, passages pietons a l'entree des carrefours.
+  const open = (cx, cy) => ({
+    x: isRoad(cx - 1, cy) && isRoad(cx + 1, cy),
+    y: isRoad(cx, cy - 1) && isRoad(cx, cy + 1)
+  });
+  const isOpenBoth = (cx, cy) => {
+    if (!isRoad(cx, cy)) return false;
+    const o = open(cx, cy);
+    return o.x && o.y;
+  };
+  // Une zone ouverte dans les deux sens est soit un croisement de rues (petit),
+  // soit une esplanade ou une avenue large (grande). Seules les petites
+  // meritent un passage pieton : sinon toute l'avenue du bas se retrouve
+  // pavee de zebrures.
+  const MAX_CARREFOUR = 8;
+  const crossId = new Int16Array(COLS * ROWS).fill(-1);
+  const crossSize = [];
+  for (let cy = 0; cy < ROWS; cy++) {
+    for (let cx = 0; cx < COLS; cx++) {
+      if (!isOpenBoth(cx, cy) || crossId[cy * COLS + cx] !== -1) continue;
+      const n = crossSize.length;
+      const q = [[cx, cy]];
+      crossId[cy * COLS + cx] = n;
+      let size = 0;
+      while (q.length) {
+        const [x, y] = q.pop();
+        size++;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const nx = x + dx, ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= COLS || ny >= ROWS) continue;
+          if (!isOpenBoth(nx, ny) || crossId[ny * COLS + nx] !== -1) continue;
+          crossId[ny * COLS + nx] = n;
+          q.push([nx, ny]);
+        }
+      }
+      crossSize.push(size);
+    }
+  }
+  const crossing = (cx, cy) => {
+    if (cx < 0 || cy < 0 || cx >= COLS || cy >= ROWS) return false;
+    const id = crossId[cy * COLS + cx];
+    return id !== -1 && crossSize[id] <= MAX_CARREFOUR;
+  };
 
   g.strokeStyle = C.roadLine;
   g.lineWidth = 2;
   g.setLineDash([10, 14]);
   for (let cy = 0; cy < ROWS; cy++) {
     for (let cx = 0; cx < COLS; cx++) {
-      if (MAP[cy][cx] === '#') continue;
-      // Un axe pointille au milieu des chaussees, seulement la ou la rue
-      // continue : les carrefours et les ruelles restent nus.
-      const openX = MAP[cy][cx - 1] === '.' && MAP[cy][cx + 1] === '.';
-      const openY = cy > 0 && cy < ROWS - 1 && MAP[cy - 1][cx] === '.' && MAP[cy + 1][cx] === '.';
-      if (openX && !openY) {
+      if (MAP[cy][cx] !== '.') continue;
+      const o = open(cx, cy);
+      // Les deux sens, pas seulement l'horizontal : les rues verticales
+      // n'avaient aucun axe, la ville etait asymetrique sans raison.
+      if (o.x && !o.y) {
         g.beginPath();
         g.moveTo(cx * CELL, cy * CELL + CELL / 2);
         g.lineTo(cx * CELL + CELL, cy * CELL + CELL / 2);
+        g.stroke();
+      } else if (o.y && !o.x) {
+        g.beginPath();
+        g.moveTo(cx * CELL + CELL / 2, cy * CELL);
+        g.lineTo(cx * CELL + CELL / 2, cy * CELL + CELL);
         g.stroke();
       }
     }
   }
   g.setLineDash([]);
 
-  // Les paves : une base sombre decalee fait l'ombre portee, la face claire
-  // par dessus donne le relief sans passer en 3D.
+  g.fillStyle = C.paint;
   for (let cy = 0; cy < ROWS; cy++) {
     for (let cx = 0; cx < COLS; cx++) {
-      if (MAP[cy][cx] !== '#') continue;
+      if (MAP[cy][cx] !== '.' || crossing(cx, cy)) continue;
+      const o = open(cx, cy);
+      const touches = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => crossing(cx + dx, cy + dy));
+      if (!touches) continue;
       const x = cx * CELL, y = cy * CELL;
-      g.fillStyle = C.wall;
-      g.fillRect(x, y + 7, CELL, CELL);
-      g.fillStyle = C.wallTop;
-      g.fillRect(x, y, CELL, CELL);
+      // Les barres d'un passage pieton barrent le sens de circulation.
+      if (o.x && !o.y) for (let i = 0; i < 4; i++) g.fillRect(x + 4 + i * 9.5, y + 3, 5, CELL - 6);
+      else if (o.y && !o.x) for (let i = 0; i < 4; i++) g.fillRect(x + 3, y + 4 + i * 9.5, CELL - 6, 5);
     }
   }
-  // Le lisere clair uniquement sur les bords exterieurs des paves
-  g.fillStyle = C.wallEdge;
-  for (let cy = 0; cy < ROWS; cy++) {
-    for (let cx = 0; cx < COLS; cx++) {
-      if (MAP[cy][cx] !== '#') continue;
+
+  // 5. les paves. Toutes les ombres d'abord, tous les toits ensuite : dans
+  // l'ordre inverse, l'ombre d'un pave recouvrirait le toit de son voisin.
+  for (const b of blocks) {
+    const ox = b.height * 0.38, oy = b.height * 0.62;
+    g.fillStyle = C.shadow;
+    for (const [cx, cy] of b.cells) g.fillRect(cx * CELL + ox, cy * CELL + oy, CELL, CELL);
+  }
+  for (const b of blocks) {
+    g.fillStyle = b.roof;
+    for (const [cx, cy] of b.cells) g.fillRect(cx * CELL, cy * CELL, CELL, CELL);
+  }
+  // Lisere clair sur les aretes exposees a la lumiere, en haut et a gauche.
+  for (const b of blocks) {
+    g.fillStyle = b.edge;
+    for (const [cx, cy] of b.cells) {
       const x = cx * CELL, y = cy * CELL;
-      if (cy === 0 || MAP[cy - 1][cx] === '.') g.fillRect(x, y, CELL, 2);
-      if (cx === 0 || MAP[cy][cx - 1] === '.') g.fillRect(x, y, 2, CELL);
-      if (cx === COLS - 1 || MAP[cy][cx + 1] === '.') g.fillRect(x + CELL - 2, y, 2, CELL);
+      if (!isRoad(cx, cy - 1) && MAP[cy - 1] && MAP[cy - 1][cx] === '#') continue;
+      g.fillRect(x, y, CELL, 2);
+    }
+    for (const [cx, cy] of b.cells) {
+      const x = cx * CELL, y = cy * CELL;
+      if (cx > 0 && MAP[cy][cx - 1] === '#') continue;
+      g.fillRect(x, y, 2, CELL);
     }
   }
   return c;

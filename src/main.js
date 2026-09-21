@@ -10,7 +10,7 @@ import { createRenderer } from './render.js';
 import { newInput, install } from './input.js';
 import { sfx, skidSound, setMuted, isMuted, wake } from './audio.js';
 
-export const VERSION = 'v0.3';
+export const VERSION = 'v0.4';
 
 // Pas de simulation fixe. La boucle rAF a un dt variable : simuler dessus
 // rendrait la course dependante du taux de rafraichissement et le fantome
