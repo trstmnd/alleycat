@@ -6,7 +6,7 @@ on:
       - gh-pages
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: gh-pages
@@ -14,6 +14,8 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         # Epinglee au SHA du commit, pas au tag : un tag se deplace, un SHA non.
@@ -62,3 +64,37 @@ jobs:
           publish_branch: gh-pages
           keep_files: true
           destination_dir: ${{ steps.dest.outputs.dir }}
+
+  # GitHub Pages ne s'active pas tout seul quand une branche gh-pages apparait :
+  # les depots recents arrivent avec la source "GitHub Actions", qui ignore
+  # completement cette branche. Le workflow tournait vert, gh-pages se
+  # remplissait, et le site repondait 404 sans que rien ne le signale.
+  # On le regle par l'API avec le jeton du workflow, plutot qu'a la main dans
+  # l'interface. L'appel est idempotent : au bout du premier, il ne fait que
+  # confirmer l'etat.
+  reglage-pages:
+    needs: publish
+    if: github.ref_name == 'main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+    steps:
+      - name: Servir gh-pages a la racine
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -u
+          if gh api "repos/$REPO/pages" >/tmp/pages.json 2>/dev/null; then
+            echo "Pages deja active, on confirme la source."
+            methode=PUT
+          else
+            echo "Pages inactif, on l'active."
+            methode=POST
+          fi
+          gh api -X "$methode" "repos/$REPO/pages" \
+            -f 'build_type=legacy' \
+            -f 'source[branch]=gh-pages' \
+            -f 'source[path]=/'
+          echo "--- etat final ---"
+          gh api "repos/$REPO/pages" --jq '{status, html_url, build_type, branche: .source.branch, dossier: .source.path}'
